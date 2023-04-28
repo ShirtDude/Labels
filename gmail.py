@@ -1,20 +1,21 @@
-import os
-import json
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+import auth
+from googleapiclient.discovery import build
 
-def authenticate(scopes):
-    creds = None
-    if os.path.exists('creds.json'):
-        with open('creds.json', 'r') as f:
-            creds_data = json.load(f)
-        creds = Credentials.from_authorized_user_info(creds_data, scopes=scopes)
+# Scopes to request access to
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
-    if not creds or not creds.valid:
-        flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', scopes)
-        creds = flow.run_local_server(port=0)
-        creds_data = creds.to_json()
-        with open('creds.json', 'w') as f:
-            json.dump(creds_data, f)
+# Call auth.authenticate() to get credentials
+creds = auth.authenticate(SCOPES)
 
-    return creds
+# Build the Gmail API client
+service = build('gmail', 'v1', credentials=creds)
+
+# Call Gmail API to get user labels
+results = service.users().labels().list(userId='me').execute()
+labels = results.get('labels', [])
+if not labels:
+    print('No labels found.')
+else:
+    print('Labels:')
+    for label in labels:
+        print(label['name'])
