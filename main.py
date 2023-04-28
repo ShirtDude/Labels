@@ -2,15 +2,27 @@ import auth
 from google.oauth2.credentials import Credentials
 import tkinter as tk
 from tkinter import messagebox
+from googleapiclient.discovery import build
 from flask import Flask
-from gmail import get_labels
+
+import contacts
+from contacts import get_labels
+
+def get_contact_labels():
+    address_book = Contacts.ABAddressBook.sharedAddressBook()
+    labels = []
+    for group in address_book.groups():
+        label = group.valueForProperty_(Contacts.kABGroupNameProperty)
+        if label:
+            labels.append(label)
+    return labels
+
 
 app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
-
 
 
 class MainWindow(tk.Frame):
@@ -36,27 +48,51 @@ class MainWindow(tk.Frame):
         self.share_button.pack(pady=20)
 
     def populate_label_listbox(self):
-        # TODO: Implement logic to populate the label listbox
-        pass
+        # Use the get_labels() function from the gmail module to get a list of all labels
+        labels = get_labels(self.creds)
+
+        # Add each label to the label_listbox
+        for label in labels:
+            self.label_listbox.insert(tk.END, label['name'])
 
     def share_labels(self):
         share_email = self.share_entry.get()
-        selected_labels = [self.label_listbox.get(idx) for idx in self.label_listbox.curselection()]
 
-        # TODO: Implement label sharing logic here
+        # Get a list of the indices of the currently selected labels in the label_listbox
+        selected_indices = self.label_listbox.curselection()
 
+        # Create a list of the selected labels based on the selected indices
+        selected_labels = [self.label_listbox.get(idx) for idx in selected_indices]
+
+        # Create a confirmation message with the selected labels and the email to share with
         confirmation_message = f'Are you sure you want to share the following labels with {share_email}?\n'
         confirmation_message += '\n'.join(selected_labels)
+
+        # Ask the user to confirm that they want to share the selected labels
         confirmation = tk.messagebox.askyesno(title='Confirmation', message=confirmation_message)
 
+        # If the user confirms, share the selected labels with the specified email address
         if confirmation:
             service = build('drive', 'v3', credentials=self.creds)
+
+            # Get the label IDs for the selected labels
             label_ids = [self.get_label_id(label_name) for label_name in selected_labels]
+
+            # Share the selected labels with the specified email address
             share_labels(service, share_email, label_ids)
+
+    def get_label_id(self, label_name):
+        # Use the get_labels() function from the gmail module to get a list of all labels
+        labels = get_labels(self.creds)
+
+        # Find the label with the specified name and return its ID
+        for label in labels:
+            if label['name'] == label_name:
+                return label['id']
 
 
 class ContactsApp(tk.Tk):
-    def __init__(self) -> object:
+    def __init__(self):
         super().__init__()
         self.title("Contacts App")
         self.geometry("300x250")
@@ -67,159 +103,7 @@ class ContactsApp(tk.Tk):
         self.login_button = tk.Button(self, text="Login", command=self.login)
         self.login_button.pack(pady=5)
 
-    def login(self):
-        scopes = ['https://www.googleapis.com/auth/contacts']
-        creds = auth.authenticate(scopes)
-        if creds:
-            self.label.config(text="You are logged in!")
-            self.login_button.config(state="disabled")
-            self.show_main_window(creds)
+def login(self):
+    # Specify the scopes required for the app
+    scopes = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/gmail.labels']
 
-    def show_main_window(self, creds):
-        main_window = MainWindow(self, creds)
-        main_window.pack(fill=tk.BOTH, expand=True)
-
-
-class ConfirmationDialog(tk.Frame):
-    def __init__(self, master, share_email, label_id):
-        super().__init__(master)
-        self.share_email = share_email
-        self.label_id = label_id
-        self.master = master
-
-        self.message = tk.Label(self, text=f"Are you sure you want to share label {label_id} with {share_email}?")
-        self.message.pack(pady=10)
-
-        self.confirm_button = tk.Button(self, text='Confirm', command=self.confirm)
-        self.confirm_button.pack(side=tk.LEFT, padx=5)
-
-        self.cancel_button = tk.Button(self, text='Cancel', command=self.cancel)
-
-    def confirm(self):
-        # TODO: Implement label sharing confirmation logic here
-        import auth
-        import tkinter as tk
-        from flask import Flask
-
-        app = Flask(__name__)
-
-        @app.route('/')
-        def hello_world():
-            return 'Hello, World!'
-
-        class MainWindow(tk.Frame):
-            def __init__(self, root, creds):
-                super().__init__(root)
-                self.creds = creds
-                self.root = root
-                self.root.geometry('300x200')
-                self.root.title('Main')
-
-                self.share_label = tk.Label(self.root, text='Share with email:')
-                self.share_label.pack(pady=10)
-                self.share_entry = tk.Entry(self.root)
-                self.share_entry.pack()
-
-                self.label_selection = tk.Label(self.root, text='Select labels to share:')
-                self.label_selection.pack(pady=10)
-                self.label_listbox = tk.Listbox(self.root, selectmode=tk.MULTIPLE)
-                self.label_listbox.pack()
-                self.populate_label_listbox()
-
-                self.share_button = tk.Button(self.root, text='Share', command=self.share_labels)
-                self.share_button.pack(pady=20)
-
-            def populate_label_listbox(self):
-                # TODO: Implement logic to populate the label listbox
-                pass
-
-            def share_labels(self):
-                share_email = self.share_entry.get()
-                selected_labels = [self.label_listbox.get(idx) for idx in self.label_listbox.curselection()]
-
-                # TODO: Implement label sharing logic here
-
-                confirmation_message = f'Are you sure you want to share the following labels with {share_email}?\n'
-                confirmation_message += '\n'.join(selected_labels)
-                confirmation = tk.messagebox.askyesno(title='Confirmation', message=confirmation_message)
-
-                if confirmation:
-                    service = build('drive', 'v3', credentials=self.creds)
-                    label_ids = [self.get_label_id(label_name) for label_name in selected_labels]
-                    share_labels(service, share_email, label_ids)
-
-        class ContactsApp(tk.Tk):
-            def __init__(self) -> object:
-                super().__init__()
-                self.title("Contacts App")
-                self.geometry("300x250")
-
-                self.label = tk.Label(self, text="Welcome to Contacts App!")
-                self.label.pack(pady=10)
-
-                self.login_button = tk.Button(self, text="Login", command=self.login)
-                self.login_button.pack(pady=5)
-
-            def login(self):
-                scopes = ['https://www.googleapis.com/auth/contacts']
-                creds = auth.authenticate(scopes)
-                if creds:
-                    self.label.config(text="You are logged in!")
-                    self.login_button.config(state="disabled")
-                    self.show_main_window(creds)
-
-            def show_main_window(self, creds):
-                main_window = MainWindow(self, creds)
-                main_window.pack(fill=tk.BOTH, expand=True)
-
-        class ConfirmationDialog(tk.Frame):
-            def __init__(self, master, share_email, label_id):
-                super().__init__(master)
-                self.share_email = share_email
-                self.label_id = label_id
-                self.master = master
-
-                self.message = tk.Label(self,
-                                        text=f"Are you sure you want to share label {label_id} with {share_email}?")
-                self.message.pack(pady=10)
-
-                self.confirm_button = tk.Button(self, text='Confirm', command=self.confirm)
-                self.confirm_button.pack(side=tk.LEFT, padx=5)
-
-                self.cancel_button = tk.Button(self, text='Cancel', command=self.cancel)
-
-            def confirm(self):
-                # Get the selected contact from the listbox
-                selected_contact = self.listbox.get(self.listbox.curselection())
-
-                # Get the selected label from the combobox
-                selected_label = self.combobox.get()
-
-                # Check if the contact and label are not empty
-                if selected_contact and selected_label:
-                    # TODO: Implement label sharing confirmation logic here
-
-                    # Close the confirmation dialog
-                    self.master.destroy()
-                else:
-                    confirmation = messagebox.askyesno(title='Confirmation', message=confirmation_message)
-
-            def cancel(self):
-                # Close the confirmation dialog without sharing the label
-                self.master.destroy()
-
-        if __name__ == '__main__':
-            app = ContactsApp()
-            app.mainloop()
-
-        # Close the confirmation dialog
-        self.master.destroy()
-
-    def cancel(self):
-        # Close the confirmation dialog without sharing the label
-        self.master.destroy()
-
-
-if __name__ == '__main__':
-    app = ContactsApp()
-    app.mainloop()
