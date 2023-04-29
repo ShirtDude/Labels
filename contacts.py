@@ -1,13 +1,17 @@
 import openai_secret_manager
-import google.auth
 from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+
+def get_secret(key_name):
+    secrets = openai_secret_manager.get_secret("samsolano_labels")
+    return secrets[key_name]
+
+
 # Set up the scopes and the secrets
 scopes = ['https://www.googleapis.com/auth/contacts']
-secrets = openai_secret_manager.get_secret("google")
+secrets = get_secret("google")
 
 # Load the credentials
 creds = None
