@@ -5,13 +5,13 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 import google.auth.exceptions
 import os
 
-creds_file = 'secrets.json'
+creds_file = 'google.json'
 scopes = ['https://www.googleapis.com/auth/contacts', 'https://www.googleapis.com/auth/contacts.other.readonly',
           'https://www.googleapis.com/auth/contacts.readonly', 'https://www.googleapis.com/auth/contacts']
 creds = None
 
-if os.path.exists('secrets.json'):
-    creds = Credentials.from_authorized_user_file('secrets.json', scopes)
+if os.path.exists('google.json'):
+    creds = Credentials.from_authorized_user_file('google.json', scopes)
 
 if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:

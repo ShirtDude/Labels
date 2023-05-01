@@ -1,39 +1,42 @@
+"""
+Module for retrieving contacts from Google People API.
+"""
+
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
-import openai_secret_manager
 
-def get_secret(key_name):
-    secrets = openai_secret_manager.get_secret("samsolano_labels")
-    return secrets[key_name]
+from api_keys import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
 
+# Set up scopes for accessing user's contacts
+CONTACTS_SCOPES = ['https://www.googleapis.com/auth/contacts.readonly']
 
-# Set up the scopes and the secrets
-scopes = ['https://www.googleapis.com/auth/contacts']
-secrets = openai_secret_manager.get_secret("google")
+# Set up Google People API client
+PEOPLE_API_NAME = 'people'
+PEOPLE_API_VERSION = 'v1'
 
-# Load the credentials
-creds = None
-if secrets:
-    creds = Credentials.from_authorized_user_info(info=secrets, scopes=scopes)
+def create_google_flow():
+    """
+    Creates a Google OAuth2 flow for accessing user's contacts.
+    """
+    return Flow.from_client_config(
+        {
+            'web': {
+                'client_id': GOOGLE_CLIENT_ID,
+                'client_secret': GOOGLE_CLIENT_SECRET,
+                'redirect_uris': [GOOGLE_REDIRECT_URI],
+                'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+                'token_uri': 'https://oauth2.googleapis.com/token',
+                'userinfo_uri': 'https://www.googleapis.com/oauth2/v1/userinfo',
+                'scope': ' '.join(CONTACTS_SCOPES)
+            }
+        },
+        scopes=CONTACTS_SCOPES
+    )
 
-# If there are no (valid) credentials available, let the user log in.
-if not creds or not creds.valid:
-    if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-    else:
-        flow = InstalledAppFlow.from_client_config(secrets, scopes)
-        creds = flow.run_local_server(port=0)
-
-    # Save the credentials for the next run
-    openai_secret_manager.save_secret("google", creds.to_json())
-
-# Build the Google Contacts API client
-service = build('people', 'v1', credentials=creds)
-
-# Print the names of the first 10 connections
-connections = service.people().connections().list(resourceName='people/me', pageSize=10, personFields='names').execute().get('connections', [])
-for person in connections:
-    names = person.get('names', [])
-    if names:
-        print(names[0].get('displayName'))
+def get_google_contacts_service(credentials: Credentials):
+    """
+    Returns a Google People API client for retrieving user's contacts.
+    """
+    service = build(PEOPLE_API_NAME, PEOPLE_API_VERSION, credentials=credentials)
+    return service.people()

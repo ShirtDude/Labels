@@ -1,9 +1,4 @@
-def get_api_key(api_key_name):
-    secret = openai_secret_manager.get_secret(api_key_name)
-    if "error" in secret:
-        raise ValueError(secret["error"])
-    return secret["api_key"]
-
-openai = {
-    'api_key': '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 '
-}
+GOOGLE_CLIENT_ID = "246245084452-u6g6040ajj1cabipleh83o6pn04vccm5.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET = "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"
+GOOGLE_REDIRECT_URI = "http://localhost:8080/oauth2callback"
+OPENAI_API_KEY = "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"
