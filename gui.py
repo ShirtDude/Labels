@@ -3,7 +3,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # Set up the credentials object
-creds = Credentials.from_authorized_user_file('creds.json', ['https://www.googleapis.com/auth/contacts', 'https://www.googleapis.com/auth/contacts.other.readonly'])
+creds = Credentials.from_authorized_user_file('secrets.json', ['https://www.googleapis.com/auth/contacts', 'https://www.googleapis.com/auth/contacts.other.readonly'])
 
 # Set up the People API client
 people_service = build('people', 'v1', credentials=creds)

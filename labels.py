@@ -5,7 +5,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
 
-from . import contacts
+from . import google_contacts
 
 # Set up the scopes and the secrets
 scopes = ['https://www.googleapis.com/auth/gmail.labels']
